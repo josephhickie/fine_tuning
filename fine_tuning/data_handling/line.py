@@ -11,8 +11,8 @@ class Line:
             self.__setattr__(key, value)
 
     def __repr__(self):
-        string = 'm: {}\n' \
-                 'c: {}\n' \
+        string = f'm: {self.m}\n' \
+                 f'c: {self.c}\n' \
                  f'r_squared: {self.r**2}'
 
         return string

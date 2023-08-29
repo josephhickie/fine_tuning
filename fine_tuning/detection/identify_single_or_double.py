@@ -53,7 +53,7 @@ def get_traces(data, points):
 
     return [[p1_horizontal, p1_vertical], [p2_horizontal, p2_vertical]]
 
-def peak_check_trace(trace, prominence_threshold_fraction=0.3):
+def peak_check_trace(trace, prominence_threshold_fraction=0.4):
 
     # to make sure we have a peak in positive direction
     trace = flip_if_trough(trace)
@@ -66,7 +66,7 @@ def peak_check_trace(trace, prominence_threshold_fraction=0.3):
 
     return peaks, properties
 
-def count_lines(data, search_point_fraction=0.1, filter_sigma=4, take_gradient=True):
+def count_lines(data, search_point_fraction=0.1, filter_sigma=6, take_gradient=True):
 
     points = get_points(data, search_point_fraction)
     traces = get_traces(data, points)
@@ -108,16 +108,17 @@ def identify(data, search_point_fraction=0.1, filter_sigma=4):
 
     return measurement
 
-def plot_peaks(data, search_point_fraction=0.1, sigma=4):
+def plot_peaks(data, search_point_fraction=0.1, sigma=4, take_gradient=True):
     import matplotlib.pyplot as plt
     traces = get_traces(data, get_points(data, search_point_fraction))
 
     plt.figure()
     for point in traces:
         for trace in point:
-            smoothed_trace = filter_trace(trace, sigma)
-            trace_gradient = np.gradient(smoothed_trace)
-            peaks, properties = peak_check_trace(trace_gradient)
+            trace = filter_trace(trace, sigma)
+            if take_gradient:
+                trace = np.gradient(trace)
+            peaks, properties = peak_check_trace(trace)
             plt.plot(trace)
             plt.scatter(peaks, trace[peaks])
 
