@@ -53,13 +53,16 @@ def model_file_to_classifier_fn(filename):
     classifier = Classifier(d_latent=d_latent)
 
     encode_fn = lambda x: vae.encoder(vae_params[0], x)[0]
+    reconstruct_fn = lambda x: vae._reconstruct(x, vae_params)
 
     @jit
     def classify(X):
         z = encode_fn(X)
         return np.argmax(classifier.predict(classifier_params, z))
 
-    return classify
+
+
+    return classify, reconstruct_fn
 
 def np_model_file_to_classifier_fn(filename):
 
