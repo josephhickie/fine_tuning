@@ -46,7 +46,7 @@ itercount = itertools.count()
 
 print("\nStarting VAE training...")
 
-num_epochs = 1000
+num_epochs = 10
 batch_size = 128
 
 num_train = X_train.shape[0]
@@ -113,7 +113,7 @@ classifier = Classifier(d_latent=d_latent)
 # __________________________________________________________________________________________________ #
 # Set up the optimiser
 step_size = 0.001
-num_epochs = 100
+num_epochs = 10
 momentum_mass = 0.9
 
 encode = lambda x: vae.encoder(vae_params[0], x)[0]

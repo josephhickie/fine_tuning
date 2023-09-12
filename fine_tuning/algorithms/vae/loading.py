@@ -18,14 +18,54 @@ from .classifier import Classifier
 from .utils import plot_examples, load_stability_data
 
 import orbax.checkpoint
-
+import pickle
 # X_train, X_test, y_train, y_test = load_stability_data()
+
+
+def orbax_to_numpy_save(filename):
+
+    orbax_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
+    raw_restored = orbax_checkpointer.restore(filename)
+
+    raw_restored = dict(raw_restored)
+
+    with open(filename + '/np_checkpoint.pickle', 'wb') as handle:
+        pickle.dump(raw_restored, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    # d_latent = raw_restored.get('d_latent')
+    # d_obs = raw_restored.get('d_obs')
+    # vae_params = raw_restored.get('vae_params')
+    # classifier_params = raw_restored.get('classifier_params')
+
 
 
 def model_file_to_classifier_fn(filename):
 
     orbax_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
     raw_restored = orbax_checkpointer.restore(filename)
+    d_latent = raw_restored.get('d_latent')
+    d_obs = raw_restored.get('d_obs')
+    vae_params = raw_restored.get('vae_params')
+    classifier_params = raw_restored.get('classifier_params')
+
+    vae = VAE(d_obs, d_latent=d_latent)
+    classifier = Classifier(d_latent=d_latent)
+
+    encode_fn = lambda x: vae.encoder(vae_params[0], x)[0]
+
+    @jit
+    def classify(X):
+        z = encode_fn(X)
+        return np.argmax(classifier.predict(classifier_params, z))
+
+    return classify
+
+def np_model_file_to_classifier_fn(filename):
+
+    with open(filename, 'rb') as handle:
+        raw_restored = pickle.load(handle)
+
     d_latent = raw_restored.get('d_latent')
     d_obs = raw_restored.get('d_obs')
     vae_params = raw_restored.get('vae_params')

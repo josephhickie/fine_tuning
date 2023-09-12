@@ -4,4 +4,4 @@ Created on 06/09/2023
 """
 
 
-from .vae import model_file_to_classifier_fn
+from .vae import model_file_to_classifier_fn, np_model_file_to_classifier_fn
