@@ -98,6 +98,7 @@ class RandomWalk:
 
 
 
+
     def measure(self):
         # relies on the video mode plotter having been created
 
