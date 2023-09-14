@@ -29,7 +29,7 @@ data = station.database.load(1)
 triple = data.mm_r.get('D')
 
 
-# d = data.mm_r.get('PCA_0')
+# d = results.mm_r.get('PCA_0')
 da = station.database.load(5).mm_r.get('PCA_0')
 
 dat = np.mean(np.gradient(da, axis=(0, 1)), axis=0)

@@ -8,7 +8,7 @@ import numpy as np
 
 def centre_triple_point_param_space(data, size_x, size_y):
     """
-    gives the required movement in parameter x and parameter y to centre the triple point found in data.
+    gives the required movement in parameter x and parameter y to centre the triple point found in results.
     :param stability_measurement:
     :param size_x:
     :param size_y:
