@@ -31,9 +31,9 @@ from qgor_simulation import Station
 
 
 station = Station()
-data = station.database.load(4)
+data = station.database.model_file_to_classifier_fn(4)
 d = data.mm_r.get('PCA_0')
-da = station.database.load(5).mm_r.get('PCA_0')
+da = station.database.model_file_to_classifier_fn(5).mm_r.get('PCA_0')
 
 dat = np.mean(np.gradient(da, axis=(0, 1)), axis=0)
 uh = dat[4: ]

@@ -1,0 +1,17 @@
+dac_options:
+  dac10:
+    min: 1001
+    max: 2001
+    jump_size: 12
+    jump_up_probability: 0.6
+  dac13:
+    min: 1000
+    max: 2000
+    jump_size: 10
+    jump_up_probability: 0.5
+
+save_directory: '/home/jdh/Desktop/random_walk/1/'
+
+
+
+
