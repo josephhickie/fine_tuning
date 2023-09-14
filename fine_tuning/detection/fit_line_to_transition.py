@@ -18,7 +18,7 @@ def _fit_line(x, y):
     return line
 
 
-# filter and gradient data first, remove edges
+# filter and gradient results first, remove edges
 def fit_single_line(filtered_data, edge_safety=10, line_to_data_min_ratio=1):
     max_X = np.stack([np.arange(0, filtered_data.shape[1]), filtered_data.argmax(axis=0)], axis=0)
 

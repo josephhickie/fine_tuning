@@ -104,9 +104,9 @@ def np_model_file_to_classifier_fn(filename):
 #
 # def plot(i, name='PCA_0'):
 #
-#     data = normalise(station.database.load(i).mm_r.get(name))
+#     results = normalise(station.database.load(i).mm_r.get(name))
 #
 #     plt.figure()
-#     plt.imshow(data)
+#     plt.imshow(results)
 #     plt.show()
-#     print(np.argmax(classifier_trainer.classify(data.flatten(), classifier_params)),)
+#     print(np.argmax(classifier_trainer.classify(results.flatten(), classifier_params)),)

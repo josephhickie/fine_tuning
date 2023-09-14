@@ -12,28 +12,30 @@ class Classifier:
     """
     A simple classifier with two hidden layers and a softmax output layer.
     """
-    def __init__(self, d_latent: int=10, d_hidden: int=512):
+    def __init__(self, d_states: int=10, d_hidden: int=512, n_dense_layers: int=2):
         """
 
         :param d_latent:
         :param d_hidden:
         """
-        self.d_latent = d_latent
+        self.n_dense_layers = n_dense_layers
+        self.d_states = d_states
         self.d_hidden = d_hidden
         self._init_network_()
 
     def _init_network_(self):
+        dense_layers = [Dense(self.d_hidden), Relu]*self.n_dense_layers
+
         self.classifier_init, self.predict = stax.serial(
-        Dense(self.d_hidden), Relu,
-        Dense(self.d_hidden), Relu,
-        Dense(self.d_latent), LogSoftmax)
+                                                    *dense_layers,
+                                                    Dense(self.d_states), LogSoftmax)
 
 
 class TrainClassifier:
     """
     A class to train the classifier.
     """
-    def __init__(self, encode, classifier, step_size, momentum_mass):
+    def __init__(self, encode, classifier, step_size):
         """
 
         :param encode:
@@ -44,11 +46,11 @@ class TrainClassifier:
         self.encode = encode
         self.classifier = classifier
         self.step_size = step_size
-        self.momentum_mass = momentum_mass
         self._init_optimiser_()
 
     def _init_optimiser_(self):
-        self.opt_init, self.opt_update, self.get_params = optimizers.momentum(self.step_size, mass=self.momentum_mass)
+        step_size = optimizers.exponential_decay(step_size=self.step_size, decay_steps=1000, decay_rate=.9)
+        self.opt_init, self.opt_update, self.get_params = optimizers.adam(step_size)
 
     @partial(jit, static_argnums=(0,))
     def loss(self, classifier_params, batch):

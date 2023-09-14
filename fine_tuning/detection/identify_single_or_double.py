@@ -36,7 +36,7 @@ def get_points(data, search_point_fraction=0.1):
 
 def get_traces(data, points):
     """
-    Get all four traces from the data.
+    Get all four traces from the results.
     :param data:
     :param points:
     :return:
@@ -58,7 +58,7 @@ def peak_check_trace(trace, prominence_threshold_fraction=0.4):
     # to make sure we have a peak in positive direction
     trace = flip_if_trough(trace)
 
-    # ensure data is in range [0, 1]
+    # ensure results is in range [0, 1]
     trace = normalise(trace)
 
     # only look for peaks that have a relatively high prominence.

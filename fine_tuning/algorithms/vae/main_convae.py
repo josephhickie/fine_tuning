@@ -20,7 +20,7 @@ from jax import config
 
 # __________________________________________________________________________________________________ #
 # __________________________________________________________________________________________________ #
-# load the data and the models
+# load the results and the models
 X_train, X_test, y_train, y_test = load_stability_data()
 d_obs = X_train.shape[1]
 
