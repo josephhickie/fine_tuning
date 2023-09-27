@@ -8,6 +8,8 @@ import jax.numpy as jnp
 import matplotlib
 import dm_pix as pix
 from jax import grad, value_and_grad
+import jax
+from tqdm import tqdm
 
 from scipy.ndimage import gaussian_filter
 matplotlib.use('TkAgg')
@@ -45,11 +47,11 @@ def normalise(data):
     return (data - data.min()) / (data.max() - data.min())
 
 params_max = jnp.array([
-    10, 1.5, 0.9, 0.9, 1.5, 0.5, 0.5, 2, 2, 2
+    10, 1.5, 0.9, 0.9, 1.5, 0.5, 0.5, 2, 2, 2, 2, 2
 ])
 
 params_min = jnp.array([
-    1.1, 0.1, 0.1, 0.1, 0.1, -0.5, -0.5, 0.1, 0.1, -2
+    1.1, 0.1, 0.1, 0.1, 0.1, -0.5, -0.5, 0.1, 0.1, -2, 0, -2
 ])
 
 def random_params():
@@ -60,7 +62,7 @@ def random_params():
 
 
 def random_data():
-    return np.abs(normalise(do2d(*random_params()) + np.random.rand(62, 62) ) - 1)
+    return np.abs(normalise(do2d(*random_params()) + 0.01 * np.random.rand(62, 62) ) - 1)
 
 def plot_random_data():
     dat = random_data()
@@ -70,24 +72,36 @@ def plot_random_data():
     return dat
 
 
-initial_params = jnp.array([
-    8, 1, 0.05, 0.58, 1, 0.2, -0.4, 0.9, 1, 0.9
-])
+cdd_diag_ratio = 8
+c_dg_0 = 1
+c_dg_1 = 0.05
+c_dg_2 = 0.58
+c_dg_3 = 1
+x_shift = 0.2
+y_shift = -0.4
+contrast_0 = 1.2
+contrast_1 = 1.3
+offset = 1
+gamma = 1
+x0 = 1
 
 initial_params = jnp.array([
-    8, 1, 0.07, 0.3, 1, 0.2, -0.4, 1.9, 10, 9,
+    cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3,
+    x_shift, y_shift, contrast_0, contrast_1, offset,
+    gamma, x0
 ])
 
 bad_params = jnp.array([
-    2, 1, 0.1, 0.3, 1, -0.3, 0.5, 0.7, 0.7, 0.
+    2, 1, 0.1, 0.3, 1, -0.3, 0.5, 0.7, 0.7, 0., 1, 0
 ])
 
 data_file = '/home/jdh/Documents/vae_training/triple_with_compensation/16940848599616.npy'
 data_ = np.load(data_file)
-data = normalise(np.abs(gaussian_filter(data_, sigma=1) - 1))
+data = gaussian_filter(data_, sigma=1)
 
-simulated_data = normalise(do2d(*initial_params) - 1)
-bad_data = normalise(do2d(*bad_params) - 1)
+simulated_data = do2d(*initial_params)
+bad_data = do2d(*bad_params)
+
 
 plt.figure()
 plt.imshow(data.T, origin='lower')
@@ -97,9 +111,10 @@ plt.figure()
 plt.imshow(simulated_data.T, origin='lower')
 plt.show()
 
-plt.figure()
-plt.imshow(bad_data.T, origin='lower')
-plt.show()
+
+# plt.figure()
+# plt.imshow(bad_data.T, origin='lower')
+# plt.show()
 
 
 one = jnp.ones_like(initial_params)
@@ -109,7 +124,7 @@ def generate(params):
 
 
 def get_loss_for_params(_params):
-    simulated_data_ = normalise(generate(_params))
+    simulated_data_ = (generate(_params))
     return loss(data, simulated_data_)
 
 
@@ -126,6 +141,11 @@ def plot_for_params(params):
     plt.imshow(data.T, origin='lower')
     plt.show()
 
+@jax.jit
+def get_grads(params):
+    return grad(l_for_p)(params)
+
+
 
 def ssim(a, b, **kwargs):
     return pix.ssim(jnp.expand_dims(a, axis=0), jnp.expand_dims(b, axis=0), **kwargs)
@@ -133,12 +153,12 @@ def ssim(a, b, **kwargs):
 
 def mse(a, b):
 
-    return np.sum((a - b)**2) / a.size
+    return np.sum(10 * ((a - b))**2) / a.size
 
 
 def l_for_p(_params):
-    params = initial_params * _params
+    # params = initial_params * _params
 
-    loss = -ssim(data, normalise(do2d(*params)))
+    loss = mse(generate(initial_params), do2d(*_params))
 
     return loss

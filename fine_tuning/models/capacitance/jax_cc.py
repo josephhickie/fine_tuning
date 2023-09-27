@@ -10,15 +10,20 @@ from .jax_backend import ground, make_cdd, sensor
 from .rust import get_location_of_first_triple_point
 
 
-def do2d(cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3, x_shift, y_shift, contrast_0, contrast_1, offset, x_res=62, y_res=62):
+def do2d(
+        cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3,
+        x_shift, y_shift, contrast_0, contrast_1, offset,
+        gamma, x0, x_res=62, y_res=62
+):
 
-    assert c_dg_0 > 0.
-    assert c_dg_1 > 0.
-    assert c_dg_2 > 0.
-    assert c_dg_3 > 0.
+    # assert c_dg_0 > 0.
+    # assert c_dg_1 > 0.
+    # assert c_dg_2 > 0.
+    # assert c_dg_3 > 0.
+    #
+    # assert jnp.abs(x_shift) <= 1.
+    # assert jnp.abs(y_shift) <= 1.
 
-    assert jnp.abs(x_shift) <= 1.
-    assert jnp.abs(y_shift) <= 1.
 
     # the x_amp and y_amp parameters are only important in their ratio to the c_dg matrix,
     # so i fix them here. The learnt c_dg_x parameters will then just be learnt in scale.
@@ -50,7 +55,7 @@ def do2d(cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3, x_shift, y_shift, contr
     v_g = v_g + centre + (jnp.array([x_shift, y_shift]) * jnp.array([x_amplitude, y_amplitude]) / 2.)
 
     state_contrast = jnp.array([contrast_0, contrast_1])
-    return sensor(v_g, cdd_inv, c_dg, state_contrast, offset)
+    return sensor(v_g, cdd_inv, c_dg, state_contrast, offset, gamma, x0)
     # return ground(v_g, cdd_inv, c_dg, state_contrast)
 
 #

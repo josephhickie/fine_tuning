@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import jax
 import time
 
+def lorentz(x, gamma, x0=0):
+    return (gamma / 2) ** 2 / ((x - x0) ** 2 + (gamma / 2) ** 2)
 
 @jax.jit
 def constant_capacitance(v_g, cdd_inv, c_dg, max_charges=100):
@@ -65,13 +67,22 @@ def sensor_state(N_discrete, U, state_contrast, sensor_offset):
     arg_min = jnp.expand_dims(jnp.argmin(U, axis=0), axis=(0, 3))
     ground_state = jnp.take_along_axis(N_discrete, arg_min, 0)
 
+    # ground_state = N_discrete.mean(axis=0)
+
     return sensor_offset + (
             ground_state * jnp.expand_dims(state_contrast, axis=(0, 1, 2))
     ).sum(axis=-1).squeeze()
 
 
 @jax.jit
-def sensor(v_g, cdd_inv, c_dg, state_contrast, sensor_offset):
+def sensor_energy(v_g, cdd_inv, c_dg, state_contrast, sensor_offset):
     n_discrete, n_continuous, u = constant_capacitance(v_g, cdd_inv, c_dg)
     a = sensor_state(n_discrete, u, state_contrast, sensor_offset)
     return a
+
+@jax.jit
+def sensor(v_g, cdd_inv, c_dg, state_contrast, sensor_offset, lorentz_gamma, lorentz_x0):
+
+    a = sensor_energy(v_g, cdd_inv, c_dg, state_contrast, sensor_offset)
+
+    return lorentz(a, lorentz_gamma, lorentz_x0)
