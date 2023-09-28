@@ -39,12 +39,12 @@ def init_network_params(sizes, key):
     return [random_layer_params(m, n, k) for m, n, k in zip(sizes[:-1], sizes[1:], keys)]
 
 
-layer_sizes = [(62 * 62), (30 * 30), 512, 512, 11]
+layer_sizes = [(62 * 62), (30 * 30), 512, 512, 12]
 
 step_size = 0.01
 num_epochs = 10
 batch_size = 128
-n_targets = 11
+n_targets = 12
 params = init_network_params(layer_sizes, random.PRNGKey(0))
 
 
@@ -71,5 +71,28 @@ preds = batched_predict(params, random_flattened_images)
 
 print(preds.shape)
 
-def loss(params, ):
-    print(params)
+cdd_diag_ratio = 8
+c_dg_0 = 1
+c_dg_1 = 0.05
+c_dg_2 = 0.58
+c_dg_3 = 1
+x_shift = 0.2
+y_shift = -0.4
+contrast_0 = 1.2
+contrast_1 = 1.3
+offset = 1
+gamma = 1
+x0 = 1
+
+initial_params = jnp.array([
+    cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3,
+    x_shift, y_shift, contrast_0, contrast_1, offset,
+    gamma, x0
+])
+
+def loss(network_params, cc_params ):
+
+    image = do2d(*cc_params).flatten()
+    prediction = predict(network_params, image)
+
+    return jnp.sum((cc_params - prediction)**2)
