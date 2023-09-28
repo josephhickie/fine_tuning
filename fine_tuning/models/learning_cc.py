@@ -12,13 +12,14 @@ import jax
 from tqdm import tqdm
 
 from scipy.ndimage import gaussian_filter
+
 matplotlib.use('TkAgg')
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 
 from capacitance import do2d
 from capacitance.jax_backend import constant_capacitance
-
+from capacitance.rust import triple_point
 
 x_res = 62
 y_res = 62
@@ -40,11 +41,10 @@ cdd = jnp.array([[1, -0.1], [-0.1, 1]])
 cdd_inv = jnp.linalg.inv(cdd)
 
 
-
-
 def normalise(data):
     # return data
     return (data - data.min()) / (data.max() - data.min())
+
 
 params_max = jnp.array([
     10, 1.5, 0.9, 0.9, 1.5, 0.5, 0.5, 2, 2, 2, 2, 2
@@ -54,15 +54,16 @@ params_min = jnp.array([
     1.1, 0.1, 0.1, 0.1, 0.1, -0.5, -0.5, 0.1, 0.1, -2, 0, -2
 ])
 
-def random_params():
 
+def random_params():
     scales = np.random.rand(params_max.size)
-    vals =  params_min + scales * (params_max - params_min)
+    vals = params_min + scales * (params_max - params_min)
     return vals
 
 
 def random_data():
-    return np.abs(normalise(do2d(*random_params()) + 0.01 * np.random.rand(62, 62) ) - 1)
+    return np.abs(normalise(do2d(*random_params()) + 0.01 * np.random.rand(62, 62)) - 1)
+
 
 def plot_random_data():
     dat = random_data()
@@ -91,6 +92,8 @@ initial_params = jnp.array([
     gamma, x0
 ])
 
+other_params = jnp.array(initial_params * (1 + (np.random.rand(initial_params.size)) * .1))
+
 bad_params = jnp.array([
     2, 1, 0.1, 0.3, 1, -0.3, 0.5, 0.7, 0.7, 0., 1, 0
 ])
@@ -102,7 +105,6 @@ data = gaussian_filter(data_, sigma=1)
 simulated_data = do2d(*initial_params)
 bad_data = do2d(*bad_params)
 
-
 plt.figure()
 plt.imshow(data.T, origin='lower')
 plt.show()
@@ -111,13 +113,13 @@ plt.figure()
 plt.imshow(simulated_data.T, origin='lower')
 plt.show()
 
-
 # plt.figure()
 # plt.imshow(bad_data.T, origin='lower')
 # plt.show()
 
 
 one = jnp.ones_like(initial_params)
+
 
 def generate(params):
     return do2d(*params)
@@ -131,6 +133,7 @@ def get_loss_for_params(_params):
 def loss(data, simulated_data):
     return jnp.sum((data - simulated_data) ** 2)
 
+
 def lorentz(x, gamma, x0=0):
     return (gamma / 2) ** 2 / ((x - x0) ** 2 + (gamma / 2) ** 2)
 
@@ -141,10 +144,10 @@ def plot_for_params(params):
     plt.imshow(data.T, origin='lower')
     plt.show()
 
+
 @jax.jit
 def get_grads(params):
     return grad(l_for_p)(params)
-
 
 
 def ssim(a, b, **kwargs):
@@ -152,8 +155,7 @@ def ssim(a, b, **kwargs):
 
 
 def mse(a, b):
-
-    return np.sum(10 * ((a - b))**2) / a.size
+    return np.sum(((a - b)) ** 2) / a.size
 
 
 def l_for_p(_params):
@@ -162,3 +164,35 @@ def l_for_p(_params):
     loss = mse(generate(initial_params), do2d(*_params))
 
     return loss
+
+
+def loss_between(a, b, mode='mse'):
+    if mode == 'mse':
+        return mse(a, b)
+
+    elif mode == 'ssim':
+        return - ssim(a, b)
+
+    else:
+        raise ValueError(f'{mode} is not a valid mode')
+
+
+func = lambda params: loss_between(generate(initial_params), generate(params))
+
+sim1 = generate(initial_params)
+scales = np.linspace(0.5, 3, 100)
+
+# for i, param in enumerate(other_params):
+#     original = other_params[i]
+#     l_g = []
+#     for scale in scales:
+#         other_params = other_params.at[i].set(original * scale)
+#         l_g.append(loss_between(sim1, generate(other_params)))
+#
+#     plt.figure()
+#     plt.plot(scales, l_g)
+#     plt.show()
+#
+
+
+from capacitance.rust import triple_point

@@ -50,6 +50,9 @@ def do2d(
     p1, p2 = get_location_of_first_triple_point(cdd_inv, c_dg)
     centre = (p1 + p2) / 2.
 
+    # print(centre)
+    # centre = jnp.array([-1.5, -0.3])
+
     # shift the window to centre it on the triple point, then have another parameter to move the centre from
     # the triple point itself to anywhere within the window as it would be if the triple point was centred
     v_g = v_g + centre + (jnp.array([x_shift, y_shift]) * jnp.array([x_amplitude, y_amplitude]) / 2.)

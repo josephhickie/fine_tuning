@@ -50,6 +50,11 @@ def triple_point(n, cdd_inv, c_dg, case=1):
 
     return (m_inv @ b)[::-1]
 
+import jax.numpy as jnp
+from jax import jit
+
+
+
 def get_location_of_first_triple_point(cdd_inv, c_dg):
 
 
