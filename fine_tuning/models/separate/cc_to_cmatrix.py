@@ -14,12 +14,19 @@ recovering the capacitance matrix parameters from the constant capacitance data
 
 """
 
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
 # neural network
+
 
 import jax.numpy as jnp
 from jax import grad, jit, vmap
 from jax import random
 from jax.scipy.special import logsumexp
+
+from fine_tuning.models.capacitance import do2d
 
 
 def random_layer_params(m, n, key, scale=1e-2):
@@ -64,6 +71,5 @@ preds = batched_predict(params, random_flattened_images)
 
 print(preds.shape)
 
-
-
-
+def loss(params, ):
+    print(params)
