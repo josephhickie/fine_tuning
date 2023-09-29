@@ -15,9 +15,13 @@ recovering the capacitance matrix parameters from the constant capacitance data
 """
 
 import matplotlib
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+SEED = 1
 
+import time
 # neural network
 
 
@@ -25,9 +29,10 @@ import jax.numpy as jnp
 from jax import grad, jit, vmap
 from jax import random
 from jax.scipy.special import logsumexp
-
 from fine_tuning.models.capacitance import do2d
 
+
+from tensorflow.data import Dataset
 
 def random_layer_params(m, n, key, scale=1e-2):
     w_key, b_key = random.split(key)
@@ -41,11 +46,19 @@ def init_network_params(sizes, key):
 
 layer_sizes = [(62 * 62), (30 * 30), 512, 512, 12]
 
-step_size = 0.01
+step_size = 1e-7
 num_epochs = 10
 batch_size = 128
+
+training_batches = 40
+test_batches = 10
+
+shuffle_buffer_size = 100
 n_targets = 12
-params = init_network_params(layer_sizes, random.PRNGKey(0))
+params = init_network_params(layer_sizes, random.PRNGKey(SEED))
+
+number_of_samples = training_batches * batch_size
+number_of_test_samples = test_batches * batch_size
 
 
 def relu(x):
@@ -53,7 +66,6 @@ def relu(x):
 
 
 def predict(params, image):
-
     activations = image
     for w, b in params[:-1]:
         outputs = jnp.dot(w, activations) + b
@@ -64,12 +76,12 @@ def predict(params, image):
 
     return logits - logsumexp(logits)
 
+
 batched_predict = vmap(predict, in_axes=(None, 0))
 
-random_flattened_images = random.normal(random.PRNGKey(1), (100, 62 * 62, ))
+random_flattened_images = random.normal(random.PRNGKey(SEED), (100, 62 * 62,))
 preds = batched_predict(params, random_flattened_images)
 
-print(preds.shape)
 
 cdd_diag_ratio = 8
 c_dg_0 = 1
@@ -90,9 +102,76 @@ initial_params = jnp.array([
     gamma, x0
 ])
 
-def loss(network_params, cc_params ):
+params_max = jnp.array([
+    10, 2, 0.4, 0.4, 2, 1, 1, 2, 2, 3, 3, 3
+])
 
-    image = do2d(*cc_params).flatten()
-    prediction = predict(network_params, image)
+params_min = jnp.array([
+    2, 0.5, 0, 0, 0.5, -1, -1, 0.3, 0.3, 1, 1, 1
+])
 
-    return jnp.sum((cc_params - prediction)**2)
+randomiser = 1 / 2 * random.uniform(random.PRNGKey(SEED), (number_of_samples, params_max.size))
+random_params = params_min[jnp.newaxis, :] + randomiser * (params_max - params_min)[jnp.newaxis, :]
+
+test_random = 1 / 2 * random.uniform(random.PRNGKey(SEED), (number_of_test_samples, params_max.size))
+test_params = params_min[jnp.newaxis, :] + test_random * (params_max - params_min)[jnp.newaxis, :]
+
+def do2d_(params):
+    return do2d(*params)
+
+
+# def loss(network_params, cc_params):
+#     images = do2d(*cc_params).flatten()
+#     prediction = batched_predict(network_params, images)
+#
+#     # sum of squares error over output params
+#     return jnp.sum((cc_params - prediction) ** 2)
+
+def accuracy(params, images, targets):
+    outputs = batched_predict(params, images)
+
+    return jnp.sum((targets - outputs) ** 2)
+
+
+def loss(network_params, images, targets):
+    preds = batched_predict(network_params, images)
+    return jnp.sum((targets - preds) ** 2)
+
+def update(network_params, images, cc_params):
+    grads = grad(loss)(network_params, images, cc_params)
+    return [(w - step_size * dw, b - step_size * db)
+            for (w, b), (dw, db) in zip(params, grads)]
+
+
+
+t = time.time()
+train_images = vmap(do2d_, in_axes=(0))(random_params).reshape(number_of_samples, -1)
+t1 = time.time()
+train_labels = random_params
+
+print(f'took {t1 - t} seconds for {number_of_samples}, \n{(t1 - t) / number_of_samples} seconds each ')
+
+
+test_images = vmap(do2d_, in_axes=(0))(test_params).reshape(number_of_test_samples, -1)
+test_labels = test_params
+
+training_set = Dataset.from_tensor_slices((train_images, train_labels))
+test_set = Dataset.from_tensor_slices((test_images, test_labels))
+
+
+training_set = training_set.shuffle(shuffle_buffer_size).batch(batch_size)
+test_set = test_set.batch(batch_size)
+
+for epoch in range(num_epochs):
+    start_time = time.time()
+    for x, y in training_set:
+        x = jnp.array(x, dtype=jnp.float32)
+        y = jnp.array(y, dtype=jnp.float32)
+        params = update(params, train_images, train_labels)
+    epoch_time = time.time() - start_time
+
+    print(f'epoch {epoch} in {epoch_time:0.2f} s')
+    print(f'training accuracy: {accuracy(params, train_images, train_labels)}')
+    print(f'test accuracy: {accuracy(params, test_images, test_labels)}')
+
+
