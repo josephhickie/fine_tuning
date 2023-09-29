@@ -64,6 +64,9 @@ number_of_test_samples = test_batches * batch_size
 def relu(x):
     return jnp.maximum(0, x)
 
+def normalise(data):
+
+    return (data - data.min()) / (data.max() - data.min())
 
 def predict(params, image):
     activations = image
@@ -162,16 +165,24 @@ test_set = Dataset.from_tensor_slices((test_images, test_labels))
 training_set = training_set.shuffle(shuffle_buffer_size).batch(batch_size)
 test_set = test_set.batch(batch_size)
 
+test_error = []
 for epoch in range(num_epochs):
     start_time = time.time()
     for x, y in training_set:
         x = jnp.array(x, dtype=jnp.float32)
+        x = normalise(x)
         y = jnp.array(y, dtype=jnp.float32)
         params = update(params, train_images, train_labels)
     epoch_time = time.time() - start_time
 
     print(f'epoch {epoch} in {epoch_time:0.2f} s')
     print(f'training accuracy: {accuracy(params, train_images, train_labels)}')
-    print(f'test accuracy: {accuracy(params, test_images, test_labels)}')
+    error = accuracy(params, test_images, test_labels)
+    test_error.append(error)
+    print(f'test error: {error}')
 
 
+
+plt.figure()
+plt.plot(test_error)
+plt.show()

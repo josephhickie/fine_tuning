@@ -8,7 +8,7 @@ from jax import random
 from jax import vmap
 from tensorflow.data import Dataset
 
-from params_to_cc import do2d_
+from .params_to_cc import do2d_
 
 def generate_data(n_training_samples, n_test_samples, params_min, params_max,
                   batch_size=128, SEED=0, shuffle_buffer_size=128

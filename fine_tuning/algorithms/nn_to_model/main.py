@@ -11,7 +11,7 @@ from vae import VAE, TrainVAE
 from classifier import Classifier, TrainClassifier
 from utils import data_stream, plot_examples, load_data, load_stability_data
 
-from
+from fine_tuning.models.separate import generate_data
 
 # import orbax.checkpoint
 # from flax.training import orbax_utils
@@ -26,18 +26,32 @@ print(xla_bridge.get_backend().platform)
 # __________________________________________________________________________________________________ #
 # __________________________________________________________________________________________________ #
 # load the results and the models
-X_train, X_test, y_train, y_test = load_stability_data()
+# X_train, X_test, y_train, y_test = load_stability_data()
+import jax.numpy as jnp
 
-#X_train, X_test, y_train, y_test = load_data()
+
+n_training_samples = 20000
+n_test_samples = 10000
+params_max = jnp.array([
+    10, 2, 0.4, 0.4, 2, 1, 1, 2, 2, 3, 3, 3
+])
+
+params_min = jnp.array([
+    2, 0.5, 0, 0, 0.5, -1, -1, 0.3, 0.3, 1, 1, 1
+])
+
+
+(X_train, X_test), (y_train, y_test) = generate_data(n_training_samples, n_test_samples, params_min, params_max)
+
 d_obs = X_train.shape[1]
 
+# __________________________________________________________________________________________________ #
+# __________________________________________________________________________________________________ #
 
-# __________________________________________________________________________________________________ #
-# __________________________________________________________________________________________________ #
 # Define the VAE
-d_latent = 10
+d_latent = 12
 vae_hidden_layers = 3
-vae = VAE(d_obs, n_dense_layers = vae_hidden_layers)
+vae = VAE(d_obs, n_dense_layers=vae_hidden_layers, d_latent=d_latent)
 vae_trainer = TrainVAE(vae, step_size=1e-3)
 
 #__________________________________________________________________________________________________ #
@@ -72,7 +86,7 @@ for epoch in pbar:
     for _ in range(num_batches):
         batch, _ = next(batches)
         vae_opt_state = vae_trainer.update(epoch_rng, next(itercount), vae_opt_state, batch)
-    if epoch%10==0:
+    if epoch % 10 == 0:
         elbo_rng, data_rng = random.split(test_rng)
         binarized_test = random.bernoulli(data_rng, X_test)
         test_l = vae_trainer.elbo(elbo_rng, vae_trainer.get_params(vae_opt_state), binarized_test)
