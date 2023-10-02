@@ -91,10 +91,10 @@ def load_data():
 def load_stability_data():
 
     X, y = fetch_dataset()
-    X_sim, y_sim = fetch_simulated_dataset()
+    # X_sim, y_sim = fetch_simulated_dataset()
 
     X = vmap(normalise, in_axes=0)(X)
-    X_sim = vmap(normalise, in_axes=0)(X_sim)
+    # X_sim = vmap(normalise, in_axes=0)(X_sim)
     #X = np.concatenate([X, X_sim], axis=0)
     #y = np.concatenate([y, y_sim], axis=0)
 
@@ -105,13 +105,13 @@ def load_stability_data():
         y_b = label_binarizer.transform(y_categorical)
         return y_b
 
-    y_sim_b = binarize(y_sim)
+    # y_sim_b = binarize(y_sim)
     y_b = binarize(y)
 
     X_train, X_test, y_train_b, y_test_b = train_test_split(X, y_b, test_size=0.25, random_state=42)
 
-    X_train = np.concatenate([X_train, X_sim], axis=0)
-    y_train_b = np.concatenate([y_train_b, y_sim_b], axis=0)
+    X_train = np.concatenate([X_train])#, X_sim], axis=0)
+    y_train_b = np.concatenate([y_train_b])#, y_sim_b], axis=0)
 
     return X_train, X_test, y_train_b, y_test_b
 
@@ -131,11 +131,10 @@ def fetch_simulated_dataset():
 
     return X, y
 def fetch_dataset():
-    root = '/home/sebastiano/Documents/charge_stability_data/vae_training_data/'
+    root = '/home/jdh/Documents/vae_training/'
 
-    classes = [0, 1, 2, 3, 0, 1, 2, 3]
-    folders = ['noise', 'single_horizontal_with_compensation', 'single_vertical_with_compensation', 'triple_with_compensation',
-               'noise_2', 'single_horizontal_2', 'single_vertical_2', 'triple_with_compensation_2']
+    classes = [0, 1, 2, 3]
+    folders = ['noise', 'single_horizontal_with_compensation', 'single_vertical_with_compensation', 'triple_with_compensation']
 
     complete_data = []
     complete_labels = []
