@@ -8,6 +8,8 @@ import matplotlib
 from jax import grad
 
 from sklearn.neighbors import KernelDensity
+from tqdm import tqdm
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from fine_tuning.models.capacitance.rust import get_location_of_first_triple_point
@@ -21,7 +23,6 @@ from scipy.signal import argrelextrema
 
 (X_train, X_test, y_train_b, y_test_b) = load_stability_data()
 
-
 #
 # one = X_train[20, ...].reshape(62, 62)
 #
@@ -30,9 +31,11 @@ from scipy.signal import argrelextrema
 # plt.show()
 
 x, y = fetch_dataset()
+y[y == 2] = 1
+
 
 def get(i):
-    return X_train[i, ...]
+    return x[i, ...]
 
 
 def fit(data, n_components=4, plot=False):
@@ -77,6 +80,7 @@ initial_params = np.array([
 
 i2 = initial_params * (1 + 0.3 * np.random.rand(initial_params.size))
 copy_i2 = jnp.copy(i2)
+
 
 def e(params):
     return jnp.sum(((do2d_(initial_params) - do2d_(params)) ** 2))
@@ -144,6 +148,7 @@ e2 = lambda params: error(get(1100).T.flatten(), do2d_(params).flatten())
 
 e2_grad = grad(e2)
 
+
 def error(a, b):
     error = np.sum((a - b) ** 2)
     return error
@@ -188,7 +193,7 @@ cdd_inv = jnp.linalg.inv(cdd)
 state_contrast = jnp.array([contrast_0, contrast_1])
 
 
-def kde_data(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
+def kde_data(data, scale=25, score_sample_rate=1, plot=False, **kwargs):
     """
 
     :param data:
@@ -210,16 +215,14 @@ def kde_data(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
         plt.imshow(data.reshape(62, 62).T, origin='lower')
         plt.show()
 
-
-
         plt.figure()
         plt.plot(
-        # s[:mi[0] + 1], e[:mi[0] + 1], 'r',
-        #      s[mi[0]:mi[1] + 1], e[mi[0]:mi[1] + 1], 'g',
-        #      s[mi[1]:mi[2] + 1], e[mi[1]:mi[2] + 1], 'b',
-        #      s[mi[2]:], e[mi[2]:], 'k',
-             s[ma], e[ma], 'go',
-             s[mi], e[mi], 'ro')
+            # s[:mi[0] + 1], e[:mi[0] + 1], 'r',
+            #      s[mi[0]:mi[1] + 1], e[mi[0]:mi[1] + 1], 'g',
+            #      s[mi[1]:mi[2] + 1], e[mi[1]:mi[2] + 1], 'b',
+            #      s[mi[2]:], e[mi[2]:], 'k',
+            s[ma], e[ma], 'go',
+            s[mi], e[mi], 'ro')
         plt.plot(s, e)
 
     if len(mi) == 3 and len(ma) == 4:
@@ -248,3 +251,8 @@ def check(i, plot=False, scale=30, sample_rate=3):
         return 0
 
 
+def check_all(ids, scale, sample_rate):
+    correct = []
+    for id in tqdm(ids):
+        correct.append(check(id, scale=scale, sample_rate=sample_rate, plot=False))
+    return np.array(correct)
