@@ -64,6 +64,8 @@ def get_location_of_first_triple_point(cdd_inv, c_dg):
     return p1, p2
 
 def stability_diagram_around_triple(cdd_inv, c_dg, x_amplitude, y_amplitude, threshold=1):
+    n = 62
+    m = 62
 
     p1, p2 = get_location_of_first_triple_point(cdd_inv, c_dg)
     centre = (p1 + p2) / 2
@@ -90,8 +92,7 @@ def stability_diagram_around_triple(cdd_inv, c_dg, x_amplitude, y_amplitude, thr
 # cdd = make_cdd(1, -0.2)
 # cdd_inv = np.linalg.inv(cdd)
 #
-# n = 62
-# m = 62
+
 #
 # c_dg = - np.array([
 #     [0.6, 0.1],

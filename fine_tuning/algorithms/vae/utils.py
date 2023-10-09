@@ -88,9 +88,9 @@ def load_data():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y_b, test_size=0.25, random_state=42)
     return X_train, X_test, y_train, y_test
-def load_stability_data():
+def load_stability_data(**kwargs):
 
-    X, y = fetch_dataset()
+    X, y = fetch_dataset(**kwargs)
     # X_sim, y_sim = fetch_simulated_dataset()
 
     X = vmap(normalise, in_axes=0)(X)
@@ -130,11 +130,11 @@ def fetch_simulated_dataset():
     X, y = frame, np.ones(frame.shape[0]) * label
 
     return X, y
-def fetch_dataset():
+def fetch_dataset(folders=None, classes=None):
     root = '/home/jdh/Documents/vae_training/'
 
-    classes = [0, 1, 2, 3]
-    folders = ['noise', 'single_horizontal_with_compensation', 'single_vertical_with_compensation', 'triple_with_compensation']
+    classes = [0, 1, 2, 3] if classes is None else classes
+    folders = ['noise', 'single_horizontal_with_compensation', 'single_vertical_with_compensation', 'triple_with_compensation'] if folders is None else folders
 
     complete_data = []
     complete_labels = []
