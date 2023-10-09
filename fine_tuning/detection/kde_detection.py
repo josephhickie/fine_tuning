@@ -7,8 +7,10 @@ from matplotlib import pyplot as plt
 from scipy.signal import argrelextrema
 from sklearn.neighbors import KernelDensity
 
+def normalise(data):
+    return (data - data.min()) / (data.max() - data.min())
 
-def kde_detection(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
+def kde_detection(data, scale=35, score_sample_rate=3, plot=False, **kwargs):
     """
     :param data:
     :param scale:
@@ -17,10 +19,12 @@ def kde_detection(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
     :param kwargs:
     :return:
     """
+
+    data = normalise(data)
     data = data * scale
     kde = KernelDensity(kernel='gaussian', **kwargs).fit(data.reshape(-1, 1))
 
-    s = np.linspace(0, scale, scale * score_sample_rate)
+    s = np.linspace(data.min(), data.max(), scale * score_sample_rate)
     e = kde.score_samples(s.reshape(-1, 1))
     mi, ma = argrelextrema(e, np.less)[0], argrelextrema(e, np.greater)[0]
 
@@ -44,7 +48,7 @@ def kde_detection(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
         return 3
     elif len(mi) == 2 and len(ma) == 3:
         # print('three states')
-        return 3
+        return 2
     elif len(mi) == 1 and len(ma) == 2:
         # print('two states')
         return 1
