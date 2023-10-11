@@ -5,10 +5,13 @@ Created on 02/10/2023
 
 import numpy as np
 import matplotlib
+matplotlib.use('TkAgg')
 from jax import grad
 
 from sklearn.neighbors import KernelDensity
 from tqdm import tqdm
+
+from fine_tuning.detection import kde_detection
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -20,6 +23,7 @@ import jax.numpy as jnp
 from jax import jit
 from fine_tuning.models.capacitance.jax_backend import sensor
 from scipy.signal import argrelextrema
+from sklearn.metrics import confusion_matrix
 
 (X_train, X_test, y_train_b, y_test_b) = load_stability_data()
 
@@ -32,6 +36,7 @@ from scipy.signal import argrelextrema
 
 x, y = fetch_dataset()
 y[y == 2] = 1
+ids = np.arange(len(x))
 
 
 def get(i):
@@ -192,58 +197,61 @@ cdd_inv = jnp.linalg.inv(cdd)
 
 state_contrast = jnp.array([contrast_0, contrast_1])
 
+def normalise(data):
+    return (data - data.min()) / (data.max() - data.min())
+#
+# def kde_data(data, scale=25, score_sample_rate=1, plot=False, **kwargs):
+#     """
+#
+#     :param data:
+#     :param scale:
+#     :param score_sample_rate:
+#     :param plot:
+#     :param kwargs:
+#     :return:
+#     """
+#     data = normalise(data)
+#     data = data * scale
+#     kde = KernelDensity(kernel='gaussian', **kwargs).fit(data.reshape(-1, 1))
+#
+#     s = np.linspace(0, scale, int(scale * score_sample_rate))
+#     e = kde.score_samples(s.reshape(-1, 1))
+#     mi, ma = argrelextrema(e, np.less)[0], argrelextrema(e, np.greater)[0]
+#
+#     if plot:
+#         plt.figure()
+#         plt.imshow(data.reshape(62, 62).T, origin='lower')
+#         plt.show()
+#
+#         plt.figure()
+#         plt.plot(
+#             # s[:mi[0] + 1], e[:mi[0] + 1], 'r',
+#             #      s[mi[0]:mi[1] + 1], e[mi[0]:mi[1] + 1], 'g',
+#             #      s[mi[1]:mi[2] + 1], e[mi[1]:mi[2] + 1], 'b',
+#             #      s[mi[2]:], e[mi[2]:], 'k',
+#             s[ma], e[ma], 'go',
+#             s[mi], e[mi], 'ro')
+#         plt.plot(s, e)
+#
+#     if len(mi) == 3 and len(ma) == 4:
+#         # print('four states')
+#         return 3
+#     elif len(mi) == 2 and len(ma) == 3:
+#         # print('three states')
+#         return 3
+#     elif len(mi) == 1 and len(ma) == 2:
+#         # print('two states')
+#         return 1
+#     else:
+#         return 0
+#         # print('one state / noise')
+#
+#     # plt.figure()
+#     # plt.plot(s, e)
 
-def kde_data(data, scale=25, score_sample_rate=1, plot=False, **kwargs):
-    """
 
-    :param data:
-    :param scale:
-    :param score_sample_rate:
-    :param plot:
-    :param kwargs:
-    :return:
-    """
-    data = data * scale
-    kde = KernelDensity(kernel='gaussian', **kwargs).fit(data.reshape(-1, 1))
-
-    s = np.linspace(0, scale, scale * score_sample_rate)
-    e = kde.score_samples(s.reshape(-1, 1))
-    mi, ma = argrelextrema(e, np.less)[0], argrelextrema(e, np.greater)[0]
-
-    if plot:
-        plt.figure()
-        plt.imshow(data.reshape(62, 62).T, origin='lower')
-        plt.show()
-
-        plt.figure()
-        plt.plot(
-            # s[:mi[0] + 1], e[:mi[0] + 1], 'r',
-            #      s[mi[0]:mi[1] + 1], e[mi[0]:mi[1] + 1], 'g',
-            #      s[mi[1]:mi[2] + 1], e[mi[1]:mi[2] + 1], 'b',
-            #      s[mi[2]:], e[mi[2]:], 'k',
-            s[ma], e[ma], 'go',
-            s[mi], e[mi], 'ro')
-        plt.plot(s, e)
-
-    if len(mi) == 3 and len(ma) == 4:
-        # print('four states')
-        return 3
-    elif len(mi) == 2 and len(ma) == 3:
-        # print('three states')
-        return 3
-    elif len(mi) == 1 and len(ma) == 2:
-        # print('two states')
-        return 1
-    else:
-        return 0
-        # print('one state / noise')
-
-    # plt.figure()
-    # plt.plot(s, e)
-
-
-def check(i, plot=False, scale=30, sample_rate=3):
-    guess = kde_data(x[i], scale=scale, score_sample_rate=sample_rate, plot=plot)
+def check(i, plot=False, scale=16, sample_rate=1):
+    guess = kde_detection(x[i], scale=scale, score_sample_rate=sample_rate, plot=plot)
     # print(y[i], guess)
     if (guess == y[i]):
         return 1
@@ -252,7 +260,24 @@ def check(i, plot=False, scale=30, sample_rate=3):
 
 
 def check_all(ids, scale, sample_rate):
-    correct = []
-    for id in tqdm(ids):
-        correct.append(check(id, scale=scale, sample_rate=sample_rate, plot=False))
-    return np.array(correct)
+    guess = [kde_detection(x[id_], scale=scale, score_sample_rate=sample_rate, plot=False) for id_ in tqdm(ids)]
+    return np.array(guess)
+
+
+def lowest_fp(scales, sample_rates):
+
+    out = np.zeros((len(scales), len(sample_rates)))
+
+    for i, scale in tqdm(enumerate(scales)):
+        for j, sample_rate in enumerate(sample_rates):
+
+            guesses = check_all(ids, scale=scale, sample_rate=sample_rate)
+            a = confusion_matrix(y, guesses)
+
+            out[i, j] = (a[0, 2] + a[1, 2]) / np.sum(a[:, 2])
+
+    return out
+
+
+
+

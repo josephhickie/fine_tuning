@@ -10,7 +10,7 @@ from sklearn.neighbors import KernelDensity
 def normalise(data):
     return (data - data.min()) / (data.max() - data.min())
 
-def kde_detection(data, scale=35, score_sample_rate=3, plot=False, **kwargs):
+def kde_detection(data, scale=30, score_sample_rate=3, plot=False, **kwargs):
     """
     :param data:
     :param scale:

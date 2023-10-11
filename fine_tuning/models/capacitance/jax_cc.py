@@ -9,6 +9,8 @@ import jax.numpy as jnp
 from .jax_backend import ground, make_cdd, sensor
 from .rust import get_location_of_first_triple_point
 
+def normalise(data):
+    return (data - data.min()) / (data.max() - data.min())
 
 def do2d(
         cdd_diag_ratio, c_dg_0, c_dg_1, c_dg_2, c_dg_3,

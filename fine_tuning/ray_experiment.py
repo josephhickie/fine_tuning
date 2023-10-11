@@ -14,6 +14,8 @@ from qgor_simulation import Station
 from qgor_simulation.Simulator import Simulator, SimulatorVideoMode
 import numpy as np
 from qgor import CompensatedDAC
+from models import gmm_fit
+from scipy.ndimage import sobel
 
 from fine_tuning.detection import check_if_gaussian
 
@@ -46,15 +48,16 @@ def do1d_and_measure(ray, length, resolution, measure):
     for point in np.linspace(0, length, resolution):
         ray(point)
         data = measure()
+        measurements.append(data)
 
         if check_if_gaussian(data.flatten()):
             detect = 0
+            print('gaussian')
 
         # data = out.mm_r.get('PCA_0')
         else:
             detect = kde_detection(data)
 
-        measurements.append(data)
         if detect == 3:
             kde_detection(data, plot=True)
 
@@ -93,5 +96,22 @@ def do_circle_check(x_gate, y_gate, measure, x_range=20, y_range=20):
             results.append(detect)
 
     return np.array(results)
+
+if __name__ == '__main__':
+
+    reset()
+    r, m = do1d_and_measure(ray_generator.get_new_ray([-1, -1]), 100, 20, measurement)
+    res, model, gm = gmm_fit(m[r == 3][0], plot=True)
+
+    from fine_tuning.models.gmm.main import *
+    e4 = lambda params: error(model.flatten(), do2d_(params).flatten())
+
+    vals = minimize(e4, initial_params, method='Nelder-Mead')
+
+    plt.figure()
+    plt.imshow(m[r == 3][0].T, origin='lower')
+    plt.figure()
+    plt.imshow(do2d_(vals.x).T, origin='lower')
+
 
 
