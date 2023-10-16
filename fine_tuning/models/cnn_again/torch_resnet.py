@@ -75,7 +75,6 @@ for epoch in range(n_epochs):
     total_samples = 0
 
 
-
     for i, (inputs, labels) in tqdm(enumerate(loader, 0)):
         outputs = model(inputs.to(device))
         loss = criterion(outputs, labels.to(device))

@@ -32,6 +32,8 @@ model.fc = nn.Linear(num_ftrs, 4).to(device)
 model_dict = torch.load(model_dir, map_location=torch.device('cpu'))
 
 model.load_state_dict(model_dict)
+model.eval()
+
 reshape_size = (224, 224)
 resize = transforms.Resize(size=reshape_size)
 
@@ -62,3 +64,11 @@ def infer(data):
         x = model(data)
 
     return x
+
+def infer_single(i):
+    data = tensor_x[i, ...]#[None, ...]
+    with torch.no_grad():
+        x = model(data)
+        _, pred = torch.max(x, 1)
+        return pred
+
