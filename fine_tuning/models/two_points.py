@@ -34,7 +34,7 @@ def full(x1, y1, x2, y2, bottom_lim, top_lim, left_lim, right_lim):
 
     x_amp = 1
     y_amp = 1
-    res = 100
+    res = 62
 
     x = np.linspace(-x_amp / 2, x_amp / 2, res)
     y = np.linspace(-y_amp / 2, y_amp / 2, res)
@@ -58,10 +58,10 @@ def full(x1, y1, x2, y2, bottom_lim, top_lim, left_lim, right_lim):
     tr_m_h, tr_c_h = get_grad_and_offset(point2, np.array([x[-1], right_lim]))
 
     bl = 1 * np.all([X < (Y - bl_c_h) / bl_m_h, Y < X * bl_m_v + bl_c_v], axis=0)
-    tr = 2 * np.all([X > (Y - tr_c_h) / tr_m_h, Y > X * tr_m_v + tr_c_v], axis=0)
+    tr = 2.2345 * np.all([X > (Y - tr_c_h) / tr_m_h, Y > X * tr_m_v + tr_c_v], axis=0)
 
-    tl = 3. * np.all(np.array([(Y >= m * X + c), np.logical_not(tr), np.logical_not(bl)]), axis=0)
-    br = 4. * np.all(np.array([(Y < m * X + c), np.logical_not(tr), np.logical_not(bl)]), axis=0)
+    tl = 5.3429580 * np.all(np.array([(Y >= m * X + c), np.logical_not(tr), np.logical_not(bl)]), axis=0)
+    br = 9.2389 * np.all(np.array([(Y < m * X + c), np.logical_not(tr), np.logical_not(bl)]), axis=0)
 
     return bl + tr + tl + br
 
@@ -122,6 +122,7 @@ initial = (-0.1, -0.1, 0.1, 0.1, 0.1, 0., 0.1, 0.)
 total = full(*point1, *point2, 0.1, -0.23, 0.05, 0.)
 
 plt.figure()
+plt.title('real')
 plt.imshow(total.T, origin='lower', extent=(-0.5, 0.5, -0.5, 0.5))
 plt.show()
 
@@ -133,12 +134,17 @@ error = lambda params: np.sum((total - full(*params))**2)
 
 # grad_error = grad(error)
 plt.figure()
+plt.title('initial params')
 plt.imshow(full(*initial).T, origin='lower', extent=(-0.5, 0.5, -0.5, 0.5))
 
 res = minimize(error, initial, method='Nelder-Mead')
-
+print(error(initial))
+print(error(res.x))
+res = minimize(error, res.x, method='Nelder-Mead')
+print(error(res.x))
 
 # grad_error = grad(error)
 plt.figure()
+plt.title('learned')
 plt.imshow(full(*res.x).T, origin='lower', extent=(-0.5, 0.5, -0.5, 0.5))
 

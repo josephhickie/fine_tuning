@@ -130,8 +130,8 @@ def fetch_simulated_dataset():
     X, y = frame, np.ones(frame.shape[0]) * label
 
     return X, y
-def fetch_dataset(folders=None, classes=None):
-    root = '/home/jdh/Documents/vae_training/'
+def fetch_dataset(root=None, folders=None, classes=None):
+    root = '/home/jdh/Documents/vae_training/' if root is None else root
 
     classes = [0, 1, 2, 3] if classes is None else classes
     folders = ['noise', 'single_horizontal_with_compensation', 'single_vertical_with_compensation', 'triple_with_compensation'] if folders is None else folders
@@ -147,7 +147,7 @@ def fetch_dataset(folders=None, classes=None):
         for file in files:
             data = np.load(directory / file)
             data = normalise(data)
-            data = data.flatten()
+            # data = data.flatten()
             # results = results[..., np.newaxis]
             frame.append(data)
 
